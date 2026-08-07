@@ -2,10 +2,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <name>GoogleCalendar</name>
-    <description>Create, Delete, Update event in Google Calendar</description>
+    <name>Kpi</name>
+    <description>Create and insert in database a KpiRecord</description>
     <groupId>io.camunda.connector</groupId>
-    <artifactId>googlecalendar</artifactId>
+    <artifactId>kpi</artifactId>
     <packaging>jar</packaging>
     <!-- 1.0.0 -->
     <version>1.0.0</version>
@@ -133,22 +133,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Google Calendar API -->
-        <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-calendar</artifactId>
-            <version>v3-rev20260517-2.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.auth</groupId>
-            <artifactId>google-auth-library-oauth2-http</artifactId>
-            <version>1.23.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.http-client</groupId>
-            <artifactId>google-http-client-gson</artifactId>
-            <version>1.44.1</version>
-        </dependency>
+
 
     </dependencies>
 

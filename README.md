@@ -6,6 +6,7 @@
 
 
 ![kpi.png](kpi.png)
+
 <a href="https://www.flaticon.com/free-icons/kpi" title="kpi icons">Kpi icons created by zero_wing - Flaticon</a>
 
 ## Description
