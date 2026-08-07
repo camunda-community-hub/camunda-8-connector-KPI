@@ -1,0 +1,36 @@
+# Configuration for running connectors in bundle with connector-runtime
+# This application YAML connect a local cluster
+
+# local connection
+# ------------------- 8.8
+camunda:
+  client:
+    mode: self-managed
+    prefer-rest-over-grpc: false
+    grpc-address: http://camunda-zeebe-gateway:26500
+    request-timeout: PT25S
+    execution-threads: 32
+
+    worker:
+      defaults:
+        max-jobs-active: 32
+        stream-enabled: true
+    auth:
+      method: none
+
+
+
+    operate:
+      enabled: false
+    tasklist:
+      enabled: false
+
+# Don't run the connection to Operate (not an inbound connection)
+camunda.connector.polling.enabled: false
+camunda.connector.webhook.enabled: false
+spring.main.web-application-type: none
+operate.client.enabled: false
+
+# logging:
+#   level:
+#    io.camunda.connector.pdf: DEBUG

@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1n6mx0f" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.49.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:process id="connector-KPI" name="connector-KPI" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=[]" target="listEvents" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0qzpd16</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0qzpd16" sourceRef="StartEvent_1" targetRef="Activity_0kjf9pe" />
+    <bpmn:userTask id="Activity_034zwk4" name="Review">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition externalReference="EXTERNAL" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_133v92r</bpmn:incoming>
+      <bpmn:outgoing>Flow_0gwjo9b</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_10h0x7b">
+      <bpmn:incoming>Flow_0gwjo9b</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="Activity_1pyuhuq" triggeredByEvent="true">
+      <bpmn:startEvent id="Event_05i82hj" name="1h">
+        <bpmn:outgoing>Flow_0s9dtkp</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="TimerEventDefinition_03zi602">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:endEvent id="Event_0117yoc">
+        <bpmn:incoming>Flow_0s9dtkp</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_0s9dtkp" sourceRef="Event_05i82hj" targetRef="Event_0117yoc" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_0gwjo9b" sourceRef="Activity_034zwk4" targetRef="Event_10h0x7b" />
+    <bpmn:scriptTask id="Activity_0kjf9pe" name="needValidation">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=if is defined(pathValidation)&#10;then pathValidation&#10;else if random number() &#60; 0.5 &#10;then &#34;ORANGE&#34;&#10;else &#34;GREEN&#34;" resultVariable="riskLevel" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0qzpd16</bpmn:incoming>
+      <bpmn:outgoing>Flow_0baismk</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_1eo92ml" default="Flow_1oy8cnl">
+      <bpmn:incoming>Flow_1sec0j3</bpmn:incoming>
+      <bpmn:incoming>Flow_0y7l7yj</bpmn:incoming>
+      <bpmn:incoming>Flow_0t48hfz</bpmn:incoming>
+      <bpmn:outgoing>Flow_orange_validation</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1oy8cnl</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1hzk0w2</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_orange_validation" name="Orange" sourceRef="Gateway_1eo92ml" targetRef="Activity_Review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=pathValidation="ORANGE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:task id="Activity_174ydnu" name="SaveReview">
+      <bpmn:incoming>Flow_1dx5lum</bpmn:incoming>
+      <bpmn:outgoing>Flow_06yzjog</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1dx5lum" sourceRef="Activity_Review" targetRef="Activity_174ydnu" />
+    <bpmn:sequenceFlow id="Flow_06yzjog" sourceRef="Activity_174ydnu" targetRef="Activity_00c62ix" />
+    <bpmn:sequenceFlow id="Flow_1oy8cnl" name="Blue" sourceRef="Gateway_1eo92ml" targetRef="Activity_0cv60rz" />
+    <bpmn:intermediateThrowEvent id="beginMarkBlue" name="begin Blue">
+      <bpmn:incoming>Flow_0495l1s</bpmn:incoming>
+      <bpmn:incoming>Flow_1k2orpc</bpmn:incoming>
+      <bpmn:incoming>Flow_1kqytek</bpmn:incoming>
+      <bpmn:outgoing>Flow_0xs7ziz</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_0495l1s" sourceRef="Activity_0cv60rz" targetRef="beginMarkBlue" />
+    <bpmn:sequenceFlow id="Flow_0xs7ziz" sourceRef="beginMarkBlue" targetRef="Activity_1emt58t" />
+    <bpmn:sequenceFlow id="Flow_1eao3cg" sourceRef="Activity_1emt58t" targetRef="Event_1mwrdvu" />
+    <bpmn:intermediateThrowEvent id="endMarkBlue" name="end Blue">
+      <bpmn:incoming>Flow_1wfoesx</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lcsnpf</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_1wfoesx" sourceRef="Activity_getWeather" targetRef="endMarkBlue" />
+    <bpmn:task id="Activity_01yutz6" name="Save Result">
+      <bpmn:incoming>Flow_1lcsnpf</bpmn:incoming>
+      <bpmn:outgoing>Flow_1698pnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1lcsnpf" sourceRef="endMarkBlue" targetRef="Activity_01yutz6" />
+    <bpmn:sequenceFlow id="Flow_1698pnd" sourceRef="Activity_01yutz6" targetRef="Activity_00c62ix" />
+    <bpmn:userTask id="Activity_Review" name="Review">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_orange_validation</bpmn:incoming>
+      <bpmn:outgoing>Flow_1dx5lum</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0xx0p7u" sourceRef="Event_1mwrdvu" targetRef="Activity_getWeather" />
+    <bpmn:intermediateCatchEvent id="Event_1mwrdvu" name="Waut x seconds">
+      <bpmn:incoming>Flow_1eao3cg</bpmn:incoming>
+      <bpmn:outgoing>Flow_0xx0p7u</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0iv4q81">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=timeToSleep</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:scriptTask id="Activity_1emt58t" name="Calculate time to wait (5=&#62;40s)">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=&#34;PT&#34; + string(floor(10 + (random number() * 31))) + &#34;S&#34;" resultVariable="timeToSleep" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0xs7ziz</bpmn:incoming>
+      <bpmn:outgoing>Flow_1eao3cg</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:serviceTask id="Activity_getWeather" name="getWeather" zeebe:modelerTemplate="io.camunda.connectors.HttpJson.v2" zeebe:modelerTemplateVersion="13" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjAzMzUgOC45OTk5N0MxNy4wMzM1IDEzLjQ0NzUgMTMuNDI4MSAxNy4wNTI5IDguOTgwNjUgMTcuMDUyOUM0LjUzMzE2IDE3LjA1MjkgMC45Mjc3NjUgMTMuNDQ3NSAwLjkyNzc2NSA4Ljk5OTk3QzAuOTI3NzY1IDQuNTUyNDggNC41MzMxNiAwLjk0NzA4MyA4Ljk4MDY1IDAuOTQ3MDgzQzEzLjQyODEgMC45NDcwODMgMTcuMDMzNSA0LjU1MjQ4IDE3LjAzMzUgOC45OTk5N1oiIGZpbGw9IiM1MDU1NjIiLz4KPHBhdGggZD0iTTQuOTMxMjYgMTQuMTU3MUw2Ljc4MTA2IDMuNzE0NzFIMTAuMTM3NUMxMS4xOTE3IDMuNzE0NzEgMTEuOTgyNCAzLjk4MzIzIDEyLjUwOTUgNC41MjAyN0MxMy4wNDY1IDUuMDQ3MzYgMTMuMzE1IDUuNzMzNTggMTMuMzE1IDYuNTc4OTJDMTMuMzE1IDcuNDQ0MTQgMTMuMDcxNCA4LjE1NTIyIDEyLjU4NDEgOC43MTIxNUMxMi4xMDY3IDkuMjU5MTMgMTEuNDU1MyA5LjYzNzA1IDEwLjYyOTggOS44NDU5TDEyLjA2MTkgMTQuMTU3MUgxMC4zMzE1TDkuMDMzNjQgMTAuMDI0OUg3LjI0MzUxTDYuNTEyNTQgMTQuMTU3MUg0LjkzMTI2Wk03LjQ5NzExIDguNTkyODFIOS4yNDI0OEM5Ljk5ODMyIDguNTkyODEgMTAuNTkwMSA4LjQyMzc0IDExLjAxNzcgOC4wODU2MUMxMS40NTUzIDcuNzM3NTMgMTEuNjc0MSA3LjI2NTEzIDExLjY3NDEgNi42Njg0MkMxMS42NzQxIDYuMTkxMDYgMTEuNTI0OSA1LjgxODExIDExLjIyNjUgNS41NDk1OUMxMC45MjgyIDUuMjcxMTMgMTAuNDU1OCA1LjEzMTkgOS44MDkzNiA1LjEzMTlIOC4xMDg3NEw3LjQ5NzExIDguNTkyODFaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type" />
+          <zeebe:input source="GET" target="method" />
+          <zeebe:input source="=&#34;https://wttr.in/&#34; + city + &#34;?format=j1&#34;" target="url" />
+          <zeebe:input source="=false" target="storeResponse" />
+          <zeebe:input source="=false" target="followRedirects" />
+          <zeebe:input source="=20" target="connectionTimeoutInSeconds" />
+          <zeebe:input source="=20" target="readTimeoutInSeconds" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="13" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.HttpJson.v2" />
+          <zeebe:header key="resultExpression" value="={&#10;  myResponseBody: response.body&#10;  // Use FEEL to extract values, e.g.,:&#10;  // myUserId: response.body.post.userId&#10;}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0xx0p7u</bpmn:incoming>
+      <bpmn:outgoing>Flow_1wfoesx</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1ah3t7d" sourceRef="Activity_1goiwt2" targetRef="Activity_0tm81e6" />
+    <bpmn:scriptTask id="Activity_1goiwt2" name="getAmount">
+      <bpmn:extensionElements>
+        <zeebe:script expression="={idx: 1 + floor(random number() * 5), places: [[&#34;Paris&#34;,&#34;France&#34;],[&#34;London&#34;,&#34;UK&#34;],[&#34;Berlin&#34;,&#34;Germany&#34;],[&#34;Madrid&#34;,&#34;Spain&#34;],[&#34;Rome&#34;,&#34;Italy&#34;]], picked: places[idx], amount: floor(1000 + (random number() * 9000)), city: picked[1], country: picked[2]}" resultVariable="amountResult" />
+        <zeebe:ioMapping>
+          <zeebe:output source="=amountResult.amount" target="amount" />
+          <zeebe:output source="=amountResult.city" target="city" />
+          <zeebe:output source="=amountResult.country" target="country" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0baismk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ah3t7d</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_0cv60rz" name="Accept">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=true" resultVariable="accept" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1oy8cnl</bpmn:incoming>
+      <bpmn:outgoing>Flow_0495l1s</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:task id="Activity_181j5f9" name="review Error">
+      <bpmn:incoming>Flow_0evfhc2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0btm9oh</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_0evfhc2" sourceRef="Event_1whkhff" targetRef="Activity_181j5f9" />
+    <bpmn:endEvent id="Event_1wkq4sl">
+      <bpmn:incoming>Flow_0btm9oh</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0btm9oh" sourceRef="Activity_181j5f9" targetRef="Event_1wkq4sl" />
+    <bpmn:boundaryEvent id="Event_1whkhff" attachedToRef="Activity_00c62ix">
+      <bpmn:outgoing>Flow_0evfhc2</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1tvbi3a" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="Activity_00c62ix" name="kpi" zeebe:modelerTemplate="io.camunda.connector.kpi.KpiFunction" zeebe:modelerTemplateIcon="data:image/png;base64,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">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="c-kpi-function" />
+        <zeebe:ioMapping>
+          <zeebe:input source="true" target="status_optional" />
+          <zeebe:input source="={&#10; dateStringUTC:           &#34;date(second, string, UTC)&#34;, &#10; dateLocalDateUTC:        &#34;date(second, LocalDate, UTC)&#34;, &#10; dateLocalTimeUTC:        &#34;date(second, LocalTime, UTC)&#34;, &#10; dateLocalDateTimeUTC:    &#34;date(second, LocalDateTime, UTC)&#34;, &#10; dateOffsetDateTimeUTC:   &#34;date(second, OffsetDateTime, UTC)&#34;, &#10; dateInstantUTC:          &#34;date(second, Instant, UTC)&#34;, &#10;	 &#10; dateSFO:                 &#34;date(minute, string, America/Los_Angeles)&#34;, &#10; &#10; fullAddress:            city+ &#34; &#34; + country,&#10; pathValidation: 		  pathValidation,&#10; &#10; blueExecution:           &#34;duration(beginMarkBlue, endMarkBlue, second)&#34;, &#10; explanation:             &#34;variable(explanation)&#34;,&#10; city:                    &#34;variable(city)&#34;,&#10; amount:                  &#34;variable(amount)&#34;, &#10; orangePath:     		  &#34;path(ANY, Flow_orange_validation)&#34;, &#10; slaLightCheck:           &#34;executionCount(Event_SLA_LighCheck)&#34;,&#10; isHighValue:             &#34;threshold(amount, &#62;, 5000)&#34;, &#10; &#10; reviewAssignee:          &#34;userTaskAssignee(Activity_Review, LAST)&#34;, &#10; reviewSLA:               &#34;userTaskSLA(Activity_Review, PT1H)&#34;, &#10; reviewSLADescription:    &#34;userTaskSLADescription(Activity_Review, PT1H, hour)&#34;, &#10; &#10; kpiLabel:                &#34;kpi-demo&#34;, &#10; incidentCount:           &#34;incidentCount()&#34;, &#10; errorCount:			  &#34;bpmErrorCount()&#34;,&#10; processDefinitionId:     &#34;processProperty(processDefinition)&#34;, &#10; latencyAfterWeather:     &#34;latency(Activity_getWeather)&#34;, &#10; retryCountTotal:         &#34;retryCount()&#34;, &#10; demoTag:                 &#34;tag(badge)&#34;, &#10; instanceKey:             &#34;processInstanceKey()&#34;, &#10; businessKey:             &#34;businessKey()&#34;, &#10; amountChangedCount:      &#34;variableChangedCount(amount)&#34;, &#10; amountBucket:            &#34;bucket(amount, 0:low,1000:medium,5000:high)&#34;, &#10; requestStatus:           &#34;messageCount(KpiStatus)&#34;,&#10; decisionOutcome:         &#34;decisionResult(GetRiskLevel)&#34;&#10; }" target="kpiPilot" />
+          <zeebe:input source="Yes" target="saveDatabase" />
+          <zeebe:input source="{{secrets.kpi_jdbc}}" target="jdbcString" />
+          <zeebe:input source="kpiAmount" target="tableName" />
+          <zeebe:input source="true" target="kpiRecord_optional" />
+          <zeebe:output source="= result.status" target="kpiStatus" />
+          <zeebe:output source="= result.kpiRecord" target="kpiAmountRequest" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="resultVariable" value="result" />
+          <zeebe:header key="errorExpression" value="if is defined(error) then bpmnError(error.code, error.message) else null" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1698pnd</bpmn:incoming>
+      <bpmn:incoming>Flow_06yzjog</bpmn:incoming>
+      <bpmn:outgoing>Flow_133v92r</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_133v92r" sourceRef="Activity_00c62ix" targetRef="Activity_034zwk4" />
+    <bpmn:boundaryEvent id="Event_06jwg2f" name="2 mn" attachedToRef="Activity_034zwk4">
+      <bpmn:outgoing>Flow_14c7lkl</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_127g80k">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="Event_0dnn17r">
+      <bpmn:incoming>Flow_14c7lkl</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_14c7lkl" sourceRef="Event_06jwg2f" targetRef="Event_0dnn17r" />
+    <bpmn:sequenceFlow id="Flow_1sec0j3" sourceRef="Activity_0j72crs" targetRef="Gateway_1eo92ml" />
+    <bpmn:boundaryEvent id="Event_1y6el57" name="badAccount" attachedToRef="Activity_0j72crs">
+      <bpmn:outgoing>Flow_0y7l7yj</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1gn3cox" errorRef="Error_1r3r7ff" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_0y7l7yj" sourceRef="Event_1y6el57" targetRef="Gateway_1eo92ml" />
+    <bpmn:boundaryEvent id="Event_1grad3q" name="badAmount" attachedToRef="Activity_0j72crs">
+      <bpmn:outgoing>Flow_0t48hfz</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_0c0cdqj" errorRef="Error_0wb349x" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_0t48hfz" sourceRef="Event_1grad3q" targetRef="Gateway_1eo92ml" />
+    <bpmn:scriptTask id="Activity_0j72crs" name="validation">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="validation" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0d1jjj3</bpmn:incoming>
+      <bpmn:outgoing>Flow_1sec0j3</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:businessRuleTask id="Activity_0tm81e6" name="getRiskLevel">
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="GetRiskLevel" resultVariable="riskResult" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1ah3t7d</bpmn:incoming>
+      <bpmn:outgoing>Flow_0d1jjj3</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:sequenceFlow id="Flow_0d1jjj3" sourceRef="Activity_0tm81e6" targetRef="Activity_0j72crs" />
+    <bpmn:sequenceFlow id="Flow_0baismk" sourceRef="Activity_0kjf9pe" targetRef="Activity_1goiwt2" />
+    <bpmn:subProcess id="Activity_kpiStatusSub" name="On KpiStatus" triggeredByEvent="true">
+      <bpmn:startEvent id="Event_kpiStatusStart" name="KpiStatus received" isInterrupting="false">
+        <bpmn:outgoing>Flow_kpiStatusToEnd</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_kpiStatus" messageRef="Message_0nusjh6" />
+      </bpmn:startEvent>
+      <bpmn:endEvent id="Event_kpiStatusEnd">
+        <bpmn:incoming>Flow_0jp90q9</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_kpiStatusToEnd" sourceRef="Event_kpiStatusStart" targetRef="Activity_0kpnd96" />
+      <bpmn:sequenceFlow id="Flow_0jp90q9" sourceRef="Activity_0kpnd96" targetRef="Event_kpiStatusEnd" />
+      <bpmn:serviceTask id="Activity_0kpnd96" name="Log status">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="amountstatusrequested" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_kpiStatusToEnd</bpmn:incoming>
+        <bpmn:outgoing>Flow_0jp90q9</bpmn:outgoing>
+      </bpmn:serviceTask>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_1hzk0w2" name="Pink" sourceRef="Gateway_1eo92ml" targetRef="Activity_1i24ow1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=pathValidation="PINK"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="Activity_1i24ow1" name="Light check">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1hzk0w2</bpmn:incoming>
+      <bpmn:outgoing>Flow_1k2orpc</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1k2orpc" sourceRef="Activity_1i24ow1" targetRef="beginMarkBlue" />
+    <bpmn:boundaryEvent id="Event_SLA_LighCheck" name="10s" attachedToRef="Activity_1i24ow1">
+      <bpmn:outgoing>Flow_1n1wunn</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0cs5tne">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:intermediateThrowEvent id="Event_0pw76i1" name="Automatic acceptance">
+      <bpmn:incoming>Flow_1n1wunn</bpmn:incoming>
+      <bpmn:outgoing>Flow_1kqytek</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_1n1wunn" sourceRef="Event_SLA_LighCheck" targetRef="Event_0pw76i1" />
+    <bpmn:sequenceFlow id="Flow_1kqytek" sourceRef="Event_0pw76i1" targetRef="beginMarkBlue" />
+  </bpmn:process>
+  <bpmn:error id="Error_0wb349x" name="Bad Amount" errorCode="BAD_AMOUNT" />
+  <bpmn:error id="Error_1r3r7ff" name="Bad account" errorCode="BAD_ACCOUNT" />
+  <bpmn:message id="Message_0nusjh6" name="KpiStatus">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=applicationId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="connector-KPI">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_15jiyoh_di" bpmnElement="Activity_034zwk4">
+        <dc:Bounds x="2410" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_10h0x7b_di" bpmnElement="Event_10h0x7b">
+        <dc:Bounds x="2652" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1tk50n8_di" bpmnElement="Activity_1pyuhuq" isExpanded="true">
+        <dc:Bounds x="1730" y="340" width="350" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1s9j7rs_di" bpmnElement="Event_05i82hj">
+        <dc:Bounds x="1770" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1782" y="465" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0117yoc_di" bpmnElement="Event_0117yoc">
+        <dc:Bounds x="1862" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0s9dtkp_di" bpmnElement="Flow_0s9dtkp">
+        <di:waypoint x="1806" y="440" />
+        <di:waypoint x="1862" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_18f7ece_di" bpmnElement="Activity_0kjf9pe">
+        <dc:Bounds x="270" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1eo92ml_di" bpmnElement="Gateway_1eo92ml" isMarkerVisible="true">
+        <dc:Bounds x="905" y="225" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_174ydnu_di" bpmnElement="Activity_174ydnu">
+        <dc:Bounds x="1190" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0n5mwnm_di" bpmnElement="beginMarkBlue">
+        <dc:Bounds x="1172" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1165" y="208" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0xtzq4b_di" bpmnElement="endMarkBlue">
+        <dc:Bounds x="1712" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1709" y="275" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_01yutz6_di" bpmnElement="Activity_01yutz6">
+        <dc:Bounds x="1810" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1k75in5_di" bpmnElement="Activity_Review">
+        <dc:Bounds x="1020" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1kb3t7k_di" bpmnElement="Event_1mwrdvu">
+        <dc:Bounds x="1442" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1421" y="275" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0rbu4pl_di" bpmnElement="Activity_1emt58t">
+        <dc:Bounds x="1260" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1lg9qdl_di" bpmnElement="Activity_getWeather">
+        <dc:Bounds x="1550" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_01wtwrd_di" bpmnElement="Activity_1goiwt2">
+        <dc:Bounds x="410" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00rok5j_di" bpmnElement="Activity_0cv60rz">
+        <dc:Bounds x="1020" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_181j5f9_di" bpmnElement="Activity_181j5f9">
+        <dc:Bounds x="2270" y="330" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1wkq4sl_di" bpmnElement="Event_1wkq4sl">
+        <dc:Bounds x="2422" y="352" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qv5f6y_di" bpmnElement="Activity_00c62ix">
+        <dc:Bounds x="2090" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0dnn17r_di" bpmnElement="Event_0dnn17r">
+        <dc:Bounds x="2562" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_17yz1l6_di" bpmnElement="Activity_0j72crs">
+        <dc:Bounds x="710" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_11ksm8e_di" bpmnElement="Activity_0tm81e6">
+        <dc:Bounds x="550" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_kpiStatusSub_di" bpmnElement="Activity_kpiStatusSub" isExpanded="true">
+        <dc:Bounds x="350" y="380" width="350" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_kpiStatusStart_di" bpmnElement="Event_kpiStatusStart">
+        <dc:Bounds x="390" y="430" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="384" y="386" width="48" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_kpiStatusEnd_di" bpmnElement="Event_kpiStatusEnd">
+        <dc:Bounds x="610" y="430" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0al9k33_di" bpmnElement="Activity_0kpnd96">
+        <dc:Bounds x="460" y="408" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_kpiStatusToEnd_di" bpmnElement="Flow_kpiStatusToEnd">
+        <di:waypoint x="426" y="448" />
+        <di:waypoint x="460" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jp90q9_di" bpmnElement="Flow_0jp90q9">
+        <di:waypoint x="560" y="448" />
+        <di:waypoint x="610" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_01kbwiz_di" bpmnElement="Activity_1i24ow1">
+        <dc:Bounds x="1020" y="360" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0pw76i1_di" bpmnElement="Event_0pw76i1">
+        <dc:Bounds x="1082" y="502" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1072" y="545" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_104fz79_di" bpmnElement="Event_SLA_LighCheck">
+        <dc:Bounds x="1042" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1081" y="453" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_13dp50l_di" bpmnElement="Event_1grad3q">
+        <dc:Bounds x="722" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="671" y="303" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0774c5i_di" bpmnElement="Event_1y6el57">
+        <dc:Bounds x="772" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="800" y="303" width="59" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1hxq84i_di" bpmnElement="Event_06jwg2f">
+        <dc:Bounds x="2452" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2487" y="303" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_00vskrf_di" bpmnElement="Event_1whkhff">
+        <dc:Bounds x="2122" y="272" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0qzpd16_di" bpmnElement="Flow_0qzpd16">
+        <di:waypoint x="188" y="250" />
+        <di:waypoint x="270" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gwjo9b_di" bpmnElement="Flow_0gwjo9b">
+        <di:waypoint x="2510" y="250" />
+        <di:waypoint x="2652" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0h969ox_di" bpmnElement="Flow_orange_validation">
+        <di:waypoint x="930" y="225" />
+        <di:waypoint x="930" y="120" />
+        <di:waypoint x="1020" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="927" y="103" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1dx5lum_di" bpmnElement="Flow_1dx5lum">
+        <di:waypoint x="1120" y="120" />
+        <di:waypoint x="1190" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06yzjog_di" bpmnElement="Flow_06yzjog">
+        <di:waypoint x="1290" y="120" />
+        <di:waypoint x="2120" y="120" />
+        <di:waypoint x="2120" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1oy8cnl_di" bpmnElement="Flow_1oy8cnl">
+        <di:waypoint x="955" y="250" />
+        <di:waypoint x="1020" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="976" y="232" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0495l1s_di" bpmnElement="Flow_0495l1s">
+        <di:waypoint x="1120" y="250" />
+        <di:waypoint x="1172" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xs7ziz_di" bpmnElement="Flow_0xs7ziz">
+        <di:waypoint x="1208" y="250" />
+        <di:waypoint x="1260" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1eao3cg_di" bpmnElement="Flow_1eao3cg">
+        <di:waypoint x="1360" y="250" />
+        <di:waypoint x="1442" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wfoesx_di" bpmnElement="Flow_1wfoesx">
+        <di:waypoint x="1650" y="250" />
+        <di:waypoint x="1712" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lcsnpf_di" bpmnElement="Flow_1lcsnpf">
+        <di:waypoint x="1748" y="250" />
+        <di:waypoint x="1810" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1698pnd_di" bpmnElement="Flow_1698pnd">
+        <di:waypoint x="1910" y="250" />
+        <di:waypoint x="2090" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xx0p7u_di" bpmnElement="Flow_0xx0p7u">
+        <di:waypoint x="1478" y="250" />
+        <di:waypoint x="1550" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ah3t7d_di" bpmnElement="Flow_1ah3t7d">
+        <di:waypoint x="510" y="250" />
+        <di:waypoint x="550" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0evfhc2_di" bpmnElement="Flow_0evfhc2">
+        <di:waypoint x="2140" y="308" />
+        <di:waypoint x="2140" y="370" />
+        <di:waypoint x="2270" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0btm9oh_di" bpmnElement="Flow_0btm9oh">
+        <di:waypoint x="2370" y="370" />
+        <di:waypoint x="2422" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_133v92r_di" bpmnElement="Flow_133v92r">
+        <di:waypoint x="2190" y="250" />
+        <di:waypoint x="2410" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14c7lkl_di" bpmnElement="Flow_14c7lkl">
+        <di:waypoint x="2470" y="308" />
+        <di:waypoint x="2470" y="340" />
+        <di:waypoint x="2562" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1sec0j3_di" bpmnElement="Flow_1sec0j3">
+        <di:waypoint x="810" y="250" />
+        <di:waypoint x="905" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0y7l7yj_di" bpmnElement="Flow_0y7l7yj">
+        <di:waypoint x="790" y="308" />
+        <di:waypoint x="790" y="328" />
+        <di:waypoint x="870" y="328" />
+        <di:waypoint x="870" y="250" />
+        <di:waypoint x="905" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0t48hfz_di" bpmnElement="Flow_0t48hfz">
+        <di:waypoint x="740" y="308" />
+        <di:waypoint x="740" y="328" />
+        <di:waypoint x="870" y="328" />
+        <di:waypoint x="870" y="250" />
+        <di:waypoint x="905" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0d1jjj3_di" bpmnElement="Flow_0d1jjj3">
+        <di:waypoint x="650" y="250" />
+        <di:waypoint x="710" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0baismk_di" bpmnElement="Flow_0baismk">
+        <di:waypoint x="370" y="250" />
+        <di:waypoint x="410" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hzk0w2_di" bpmnElement="Flow_1hzk0w2">
+        <di:waypoint x="930" y="275" />
+        <di:waypoint x="930" y="400" />
+        <di:waypoint x="1020" y="400" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="935" y="334.5" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1k2orpc_di" bpmnElement="Flow_1k2orpc">
+        <di:waypoint x="1120" y="400" />
+        <di:waypoint x="1146" y="400" />
+        <di:waypoint x="1146" y="250" />
+        <di:waypoint x="1172" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1n1wunn_di" bpmnElement="Flow_1n1wunn">
+        <di:waypoint x="1060" y="458" />
+        <di:waypoint x="1060" y="520" />
+        <di:waypoint x="1082" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1kqytek_di" bpmnElement="Flow_1kqytek">
+        <di:waypoint x="1118" y="520" />
+        <di:waypoint x="1150" y="520" />
+        <di:waypoint x="1150" y="250" />
+        <di:waypoint x="1172" y="250" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

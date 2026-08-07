@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_GetRiskLevel" name="GetRiskLevel" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.49.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <decision id="GetRiskLevel" name="Get Risk Level">
+    <decisionTable id="DecisionTable_GetRiskLevel" hitPolicy="FIRST">
+      <input id="Input_amount" label="Amount">
+        <inputExpression id="InputExpression_amount" typeRef="number">
+          <text>amount</text>
+        </inputExpression>
+      </input>
+      <input id="Input_city" label="City">
+        <inputExpression id="InputExpression_city" typeRef="string">
+          <text>city</text>
+        </inputExpression>
+      </input>
+      <output id="Output_riskLevel" label="Risk level" name="riskLevel" typeRef="string" />
+      <output id="Output_riskRatio" label="Risk ratio" name="riskRatio" typeRef="number" />
+      <output id="Output_riskExplanation" label="Risk explanation" name="riskExplanation" typeRef="string" />
+      <rule id="Rule_low">
+        <inputEntry id="InputEntry_low_amount"><text><![CDATA[< 1000]]></text></inputEntry>
+        <inputEntry id="InputEntry_low_city"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_low_level"><text>"GREEN"</text></outputEntry>
+        <outputEntry id="OutputEntry_low_ratio"><text>100</text></outputEntry>
+        <outputEntry id="OutputEntry_low_explanation"><text>"Low amount, minimal risk"</text></outputEntry>
+      </rule>
+      <rule id="Rule_medium_watched_city">
+        <inputEntry id="InputEntry_mediumWatched_amount"><text>[1000..3000)</text></inputEntry>
+        <inputEntry id="InputEntry_mediumWatched_city"><text>"Paris","London","Berlin"</text></inputEntry>
+        <outputEntry id="OutputEntry_mediumWatched_level"><text>"ORANGE"</text></outputEntry>
+        <outputEntry id="OutputEntry_mediumWatched_ratio"><text>550</text></outputEntry>
+        <outputEntry id="OutputEntry_mediumWatched_explanation"><text>"Medium amount in a monitored city"</text></outputEntry>
+      </rule>
+      <rule id="Rule_medium">
+        <inputEntry id="InputEntry_medium_amount"><text>[1000..3000)</text></inputEntry>
+        <inputEntry id="InputEntry_medium_city"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_medium_level"><text>"GREEN"</text></outputEntry>
+        <outputEntry id="OutputEntry_medium_ratio"><text>250</text></outputEntry>
+        <outputEntry id="OutputEntry_medium_explanation"><text>"Medium amount, standard city"</text></outputEntry>
+      </rule>
+      <rule id="Rule_high">
+        <inputEntry id="InputEntry_high_amount"><text>[3000..5000)</text></inputEntry>
+        <inputEntry id="InputEntry_high_city"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_high_level"><text>"ORANGE"</text></outputEntry>
+        <outputEntry id="OutputEntry_high_ratio"><text>700</text></outputEntry>
+        <outputEntry id="OutputEntry_high_explanation"><text>"High amount, elevated risk"</text></outputEntry>
+      </rule>
+      <rule id="Rule_veryHigh">
+        <inputEntry id="InputEntry_veryHigh_amount"><text><![CDATA[>= 5000]]></text></inputEntry>
+        <inputEntry id="InputEntry_veryHigh_city"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_veryHigh_level"><text>"RED"</text></outputEntry>
+        <outputEntry id="OutputEntry_veryHigh_ratio"><text>950</text></outputEntry>
+        <outputEntry id="OutputEntry_veryHigh_explanation"><text>"Very high amount, high risk"</text></outputEntry>
+      </rule>
+      <rule id="Rule_catchAll">
+        <inputEntry id="InputEntry_catchAll_amount"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_catchAll_city"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_catchAll_level"><text>"ORANGE"</text></outputEntry>
+        <outputEntry id="OutputEntry_catchAll_ratio"><text>500</text></outputEntry>
+        <outputEntry id="OutputEntry_catchAll_explanation"><text>"Unclassified"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_GetRiskLevel">
+      <dmndi:DMNShape id="DMNShape_GetRiskLevel" dmnElementRef="GetRiskLevel">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

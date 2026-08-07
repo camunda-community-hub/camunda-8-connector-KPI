@@ -1,0 +1,60 @@
+# Configuration for running connectors in bundle with connector-runtime
+
+# Cloud connection
+# zeebe.client.cloud:
+#    region=bru-2
+#    clusterId=xxx
+#    clientId=xxx
+#    clientSecret=xxx
+
+# ------------------------------------ 8.8
+camunda:
+  client:
+    mode: self-managed
+    prefer-rest-over-grpc: false
+    grpc-address: http://localhost:26500
+    request-timeout: PT25S
+    execution-threads: 32
+
+    worker:
+      defaults:
+        max-jobs-active: 32
+        stream-enabled: true
+
+    auth:
+      method: none
+
+
+    operate:
+      enabled: false
+    tasklist:
+      enabled: false
+    rest-address: http://localhost:8080
+
+
+# Don't run the connection to Operate (not an inbound connection)
+camunda.connector.polling.enabled: false
+camunda.connector.webhook.enabled: false
+spring.main.web-application-type: none
+operate.client.enabled: false
+
+# ------------------------------------ Connector secrets
+# Resolved by the EnvironmentSecretProvider via the Spring Environment.
+# Referenced in BPMN as {{secrets.googleCalendarClientId}} etc.
+# DO NOT COMMIT this file: it contains real credentials (gitignored).
+camunda.connector.secretprovider.environment.prefix: "SECRET_"
+
+# Disable SPI/ServiceLoader-based secret provider discovery (default: true).
+# zeebe-cherry-runtime is a test dependency (needed by ElementTemplateGenerator /
+# DocumentationGenerator) that ships io.camunda.cherry.runtime.CherrySecretProvider,
+# registered via META-INF/services/io.camunda.connector.api.secret.SecretProvider.
+# That class expects to be wired as a full Spring bean by the actual Cherry Runtime
+# (with a JPA-backed SecretEnvService injected). Under LocalConnectorRuntime it is only
+# picked up via ServiceLoader, so its @Autowired SecretEnvService field stays null, and
+# every secret lookup throws a NullPointerException instead of falling back to the
+# EnvironmentSecretProvider below. Setting this to false skips the SPI lookup entirely;
+# the EnvironmentSecretProvider bean (SECRET_ prefixed keys) still works either way.
+camunda.connector.secretprovider.discovery.enabled: false
+
+SECRET_kpi_jdbc: jdbc:postgresql://localhost:5432/c8-kpi?user=postgres&password=postgres
+
