@@ -220,6 +220,21 @@ public abstract class KpiFct {
      */
     public abstract Object execute(FunctionRecord functionRecord, OutboundConnectorContext outboundConnectorContext, CamundaClient camundaClient) throws Exception;
 
+    /**
+     * Peek at how long, in milliseconds, this function call wants KpiFunction to wait before running any function
+     * in the pilot (e.g. to let Zeebe's exporter catch up before querying history) - without actually executing
+     * anything. KpiFunction calls this on every pilot entry in a first pass, before running any of them, and sleeps
+     * once for the max value found across the whole pilot; a function that has nothing to wait for (the default,
+     * and every function except KpiFctHistory today) just returns 0.
+     *
+     * @param functionRecord the decoded function call (name and parameters), or the raw value when it is a constant
+     * @return the number of milliseconds this call wants to wait, or 0 if none
+     * @throws ConnectorException if this function declares a wait parameter but its value cannot be parsed
+     */
+    public long peekWaitMs(FunctionRecord functionRecord) throws ConnectorException {
+        return 0;
+    }
+
     public String getSignature(FunctionRecord functionRecord) {
         String parameters = functionRecord.parameters == null ? "" : String.join(",", functionRecord.parameters);
         return getName() + " : " + parameters;

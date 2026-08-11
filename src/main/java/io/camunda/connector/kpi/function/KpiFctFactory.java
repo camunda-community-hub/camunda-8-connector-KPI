@@ -21,6 +21,7 @@ public class KpiFctFactory {
             new KpiFctProcessVariable(),
             new KpiFctDuration(),
             new KpiFctPath(),
+            new KpiFctHistory(),
             new KpiFctThreshold(),
             new KpiFctUserTaskAssignee(),
             new KpiFctUserTaskSLA(),
@@ -52,7 +53,7 @@ public class KpiFctFactory {
     public static String getFctLabels() {
         return KNOWN_FUNCTIONS.stream()
                 .map(KpiFct::getLabel)
-                .collect(Collectors.joining(","));
+                .collect(Collectors.joining(", "));
     }
 
     /**

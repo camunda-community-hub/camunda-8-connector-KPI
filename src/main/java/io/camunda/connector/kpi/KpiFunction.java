@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -64,20 +65,40 @@ public class KpiFunction implements OutboundConnectorFunction, CherryConnector {
 
         try {
             KpiOutput kpiOutput = new KpiOutput();
-            String log = "";
+
+            // First pass: decode every pilot entry once and peek at how long each wants to wait (e.g. to let
+            // Zeebe's exporter catch up before querying history), without executing anything yet. Only one
+            // Thread.sleep happens below, for the max across the whole pilot - not once per function.
+            List<DecodedEntry> decodedEntries = new ArrayList<>();
+            long maxWaitMs = 0;
             for (Map.Entry<String, Object> pilotEntry : kpiInput.getKpiPilot().entrySet()) {
                 FunctionRecord functionRecord = decodeFunction(pilotEntry.getKey(), pilotEntry.getValue());
                 KpiFct kpiFct = KpiFctFactory.getInstance().getKpiFct(functionRecord);
-                if (kpiFct != null) {
-                    long beginFct = System.currentTimeMillis();
-                    Object valueFct = kpiFct.execute(functionRecord, outboundConnectorContext, camundaClient);
-                    logger.debug("KpiFct {} param: {} value:[{}]",
-                            kpiFct.getName(),
-                            functionRecord.parameters.stream().collect(Collectors.joining(",")),
-                            valueFct);
-                    kpiOutput.kpiRecord.put(pilotEntry.getKey(), valueFct);
-                    log += pilotEntry.getKey() + "=[" + kpiFct.getName() + "] " + (System.currentTimeMillis() - beginFct) + " ms,";
+                decodedEntries.add(new DecodedEntry(pilotEntry.getKey(), functionRecord, kpiFct));
+                maxWaitMs = Math.max(maxWaitMs, kpiFct.peekWaitMs(functionRecord));
+            }
+
+            if (maxWaitMs > 0) {
+                logger.info("KpiPilot: waiting {} ms before running any function (waitMs)", maxWaitMs);
+                try {
+                    Thread.sleep(maxWaitMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new ConnectorException(KpiError.OPERATION_EXECUTION, "Interrupted while waiting waitMs: " + e.getMessage());
                 }
+            }
+
+            // Second pass: now actually run every function.
+            String log = "";
+            for (DecodedEntry decodedEntry : decodedEntries) {
+                long beginFct = System.currentTimeMillis();
+                Object valueFct = decodedEntry.kpiFct().execute(decodedEntry.functionRecord(), outboundConnectorContext, camundaClient);
+                logger.debug("KpiFct {} param: {} value:[{}]",
+                        decodedEntry.kpiFct().getName(),
+                        decodedEntry.functionRecord().parameters.stream().collect(Collectors.joining(",")),
+                        valueFct);
+                kpiOutput.kpiRecord.put(decodedEntry.key(), valueFct);
+                log += decodedEntry.key() + "=[" + decodedEntry.kpiFct().getName() + "] " + (System.currentTimeMillis() - beginFct) + " ms,";
             }
             logger.info("KpiPilot execution: {} . kpiRecord: {}", log, kpiOutput.kpiRecord);
             if (KpiInput.SAVEDATABASE_V_YES.equals(kpiInput.getSaveDatabase())) {
@@ -201,6 +222,12 @@ public class KpiFunction implements OutboundConnectorFunction, CherryConnector {
 
         functionRecord.value = value;
         return functionRecord;
+    }
+
+    /**
+     * One pilot entry, decoded and resolved to its KpiFct, before it is actually executed.
+     */
+    private record DecodedEntry(String key, FunctionRecord functionRecord, KpiFct kpiFct) {
     }
 
 }

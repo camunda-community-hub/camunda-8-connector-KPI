@@ -14,7 +14,7 @@ public class KpiFctConstant extends KpiFct {
 
     @Override
     public String getLabel() {
-        return "<value>";
+        return "'value'";
     }
 
     @Override

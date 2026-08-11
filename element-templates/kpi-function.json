@@ -26,6 +26,10 @@
     {
       "id": "Output",
       "label": "Output"
+    },
+    {
+      "id": "errorManagement",
+      "label": "Error Management"
     }
   ],
   "properties": [
@@ -47,7 +51,7 @@
     {
       "id": "kpiPilot",
       "label": "Pilot to build the KPI",
-      "description": "Record to build the KPI. Set of \u0027name\u0027:\u0027function\u0027. Available functions: \u003cvalue\u003e,variable(variableName),duration(fromElementId[:START|:END], toElementId[:START|:END], unit),path(mode, transitionId, ...),threshold(variableName, operator, value),userTaskExecution(taskFilter, mode),userTaskSLA(taskFilter, limit),executionCount(elementId),userTaskSLADescription(taskFilter, limit, unit),date(rounding, type, zone),incidentCount([elementId]),processProperty(processDefinition|processDefinitionVersion|tenantId),latency(elementId),retryCount(elementId),tag(tagName),processInstanceKey(),businessKey(),variableChangedCount(variableName),bucket(variableName, classification),decisionResult(decisionId),messageCount(messageName),bpmErrorCount(errorCode, elementId),bpmnError(elementId),bpmnErrorCount([errorCode])",
+      "description": "Record to build the KPI. Set of \u0027name\u0027:\u0027function\u0027. Available functions: \u0027value\u0027, variable(variableName), duration(fromElementId[:START|:END], toElementId[:START|:END], unit), path(mode, transitionId, ...), history(resultType:JSON, topics:ALL, activityFilter:ALL, size:100, waitMs:0), threshold(variableName, operator, value), userTaskAssignee(taskFilter, mode), userTaskSLA(taskFilter, limit), executionCount(elementId), userTaskSLADescription(taskFilter, limit, unit), date(rounding, type, zone), incidentCount([elementId]), processProperty(processDefinition|processDefinitionVersion|tenantId), latency(elementId), retryCount(elementId), tag(tagName), processInstanceKey(), businessKey(), variableChangedCount(variableName), bucket(variableName, classification), decisionResult(decisionId), messageCount(messageName), bpmErrorCount(errorCode, elementId), bpmnError(elementId), bpmnErrorCount([errorCode])",
       "type": "String",
       "feel": "optional",
       "binding": {
@@ -161,14 +165,16 @@
       "group": "Output"
     },
     {
-      "label": "ControllerPage Expression",
-      "description": "Expression to define BPMN Errors to throw",
-      "type": "Hidden",
-      "value": "if is defined(error) then bpmnError(error.code, error.message) else null",
+      "label": "Error Expression",
+      "description": "Expression to define BPMN Errors to throw with error context",
+      "type": "String",
+      "value": "if is defined(error) then bpmnError(error.code, error.message, {connectorError: {error: error.code, message: error.message}}) else null",
+      "feel": "optional",
       "binding": {
         "key": "errorExpression",
         "type": "zeebe:taskHeader"
-      }
+      },
+      "group": "errorManagement"
     }
   ]
 }

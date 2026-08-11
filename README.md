@@ -96,6 +96,32 @@ of the same archived row.
 | DATABASE_NOT_MATCH    | saveDatabase is "Yes" but no column of tableName matches any key of the KPI record                                                                                                            |
 | SQL_ERROR             | Error during insertion in the database (e.g. the table does not exist, or a value does not fit its column type)                                                                              |
 
+## Catching an error from a boundary event
+
+To let a BPMN error boundary event catch one of the errors above, the connector task needs an `errorExpression`
+task header that calls the FEEL `bpmnError(...)` function - there is no built-in variable (e.g. no
+`thrownErrorCode`/`thrownErrorMessage`) that a boundary event can read automatically:
+
+```
+if is defined(error) then bpmnError(error.code, error.message, {connectorError: {error: error.code, message: error.message}}) else null
+```
+
+`error.code`/`error.message` only exist transiently while evaluating this expression - they are not process
+variables. `bpmnError`'s **third, optional parameter** is a context whose entries *do* become real process variables
+once the error is thrown and caught, so the boundary event can map that whole object onward, e.g. via
+`zeebe:ioMapping`:
+
+```xml
+<zeebe:output source="=connectorError" target="kpiError" />
+```
+
+giving downstream elements a single `kpiError` variable with two fields, `kpiError.error` (the error code) and
+`kpiError.message`. See `src/test/resources/connector-KPI.bpmn` for a working example.
+
+**Is the `variables` parameter mandatory to throw the error?** No. `bpmnError(errorCode, errorMessage)` (two
+arguments) throws the BPMN error exactly the same way - the boundary event still catches it, retries/incidents behave
+identically. The third `variables` parameter is purely a way to also carry data into the catching scope; omitting it
+only means no extra variables come along with the error, nothing about the throw itself changes.
 
 # Kpi Record
 
@@ -186,6 +212,256 @@ Check which of the given transition (element) names were executed.
 | transitionId  | Yes (≥1) | One or more element ids to check; repeat as extra parameters       |
 
 Returns `Boolean.TRUE`/`Boolean.FALSE` depending on mode.
+
+### history(resultType:JSON, topics:ALL, activityFilter:ALL, size:100, waitMs:0)
+
+Return the process instance's execution history as a list of activities, ordered by start date (earliest first) -
+including, recursively, the history of every process instance spawned by a call activity (a call activity that
+itself calls another process, which calls another, etc.), since a called process instance's activities are part of
+the calling process instance's history.
+
+Unlike every other function, `history` takes **named** parameters, not positional ones: each parameter is
+`name:value`, parameters are comma-separated, and any parameter can be omitted (its default applies) or given in any
+order. For example, `history(activityFilter:TASK, resultType:STRING)` is valid and uses the defaults for
+`topics`, `size` and `waitMs`.
+
+| Parameter      | Required | Description                                                                                                              |
+|----------------|----------|----------------------------------------------------------------------------------------------------------------------------|
+| resultType     | No       | `STRING` (a comma-separated list of activities, each a `\|`-separated `topic:value` list) or `JSON` (a list of objects); default `JSON` |
+| topics         | No       | `\|`-separated list of topics to report per activity - see below; default `ALL`                                          |
+| activityFilter | No       | `\|`-separated list of `BpmnElementType` names (or the special values `EVENT`, `TASK`, `ACTIVITY`, `GATEWAY`, `SEQUENCE`, `ALL` - see below); default `ALL` |
+| size           | No       | Maximum number of activities returned, keeping the earliest ones; default `100`                                          |
+| waitMs         | No       | Milliseconds to wait, once, before *any* function in the pilot runs (see below); default `0`                             |
+
+Every parameter name, topic and `activityFilter` value is matched **case-insensitively** - `resultType`, `RESULTTYPE`
+and `resulttype` are all equivalent, and so are `startDate`, `STARTDATE` and `startdate`.
+
+`size` exists because the underlying history search has no way to return an unbounded number of activities in one
+shot - if a process instance's history is larger than `size`, only the first `size` activities (earliest by start
+date) are returned; the rest are silently dropped. Raise `size` if you need more, e.g. `history(size:500)`.
+
+`waitMs` exists because Zeebe exports process instance history asynchronously - right after an activity completes,
+it may not be queryable yet through the search API. If `waitMs` is set, `history` (and, by extension, the whole
+KPI pilot) waits before querying anything, giving the exporter time to catch up. If the same pilot has more than one
+`history(...)` call with different `waitMs` values, the connector waits **once**, for the largest value across
+all of them, before running *any* function in the pilot (not just `history`) - not once per call, and not the
+sum of them.
+
+Available topics: `elementId`, `elementName`, `elementInstanceKey`, `sourceRef`, `targetRef`, `processInstanceKey`,
+`processDefinitionId`, `processDefinitionName`, `processDefinitionVersion`, `type`, `state`, `startDate`, `endDate`,
+`assignee` (user tasks only, from the matching user task's history), `hasIncident`, `incidentKey`, `tenantId`, plus
+the special value `ALL`, which reports every topic above (equivalent to spelling out
+`elementId|elementName|elementInstanceKey|sourceRef|targetRef|processInstanceKey|processDefinitionId|processDefinitionName|processDefinitionVersion|type|state|startDate|endDate|assignee|hasIncident|incidentKey|tenantId`).
+`startDate`/`endDate` are formatted as ISO-8601 (e.g. `2026-08-10T17:21:08Z`). `processInstanceKey`/
+`processDefinitionId`/`processDefinitionName`/`processDefinitionVersion` identify which process instance/definition
+an activity belongs to - the top-level one, or a nested one spawned by a call activity (see below). `sourceRef`/
+`targetRef` only ever have a value on a sequence flow entry (see [Sequence flows](#sequence-flows-sequence) below).
+
+**A topic with no value for a given activity is omitted from that activity entirely, contextually** - it is not
+reported as `null`/empty. For example `sourceRef`/`targetRef` never appear on anything but a sequence flow entry, and
+`state`/`endDate`/`assignee` never appear on a sequence flow entry (see below); requesting `topics:ALL` therefore
+returns a different, smaller set of keys per entry depending on what kind of activity it is.
+
+`activityFilter` accepts any of: `TASK`, `SERVICE_TASK`, `USER_TASK`, `MANUAL_TASK`, `RECEIVE_TASK`, `SEND_TASK`,
+`SCRIPT_TASK`, `BUSINESS_RULE_TASK`, `CALL_ACTIVITY`, `SUB_PROCESS`, `AD_HOC_SUB_PROCESS`, `EXCLUSIVE_GATEWAY`,
+`PARALLEL_GATEWAY`, `INCLUSIVE_GATEWAY`, `EVENT_BASED_GATEWAY`, `START_EVENT`, `INTERMEDIATE_CATCH_EVENT`,
+`INTERMEDIATE_THROW_EVENT`, `BOUNDARY_EVENT`, `END_EVENT`, `EVENT_SUB_PROCESS`, `MULTI_INSTANCE_BODY`, `PROCESS`,
+`SEQUENCE_FLOW`, `UNSPECIFIED`, plus five convenience values, each expanding to a whole family of types:
+
+| Convenience value | Expands to                                                                                                          |
+|--------------------|----------------------------------------------------------------------------------------------------------------------|
+| `EVENT`            | `START_EVENT`, `INTERMEDIATE_CATCH_EVENT`, `INTERMEDIATE_THROW_EVENT`, `BOUNDARY_EVENT`, `END_EVENT`, `EVENT_SUB_PROCESS` |
+| `TASK`             | `TASK`, `SERVICE_TASK`, `USER_TASK`, `MANUAL_TASK`, `RECEIVE_TASK`, `SEND_TASK`, `SCRIPT_TASK`, `BUSINESS_RULE_TASK`  |
+| `ACTIVITY`         | Every type in `TASK` above, plus `SUB_PROCESS`, `AD_HOC_SUB_PROCESS`, `MULTI_INSTANCE_BODY`                          |
+| `GATEWAY`          | `EXCLUSIVE_GATEWAY`, `PARALLEL_GATEWAY`, `INCLUSIVE_GATEWAY`, `EVENT_BASED_GATEWAY`                                 |
+| `ALL`              | `ACTIVITY\|EVENT\|SEQUENCE` - every activity, sub-flow container, event and sequence flow (does **not** include `GATEWAY` - add it explicitly, e.g. `ALL|GATEWAY`, if you want gateways too) |
+
+`ACTIVITY` (and therefore `ALL`) does not include `CALL_ACTIVITY` itself - filter on `CALL_ACTIVITY` explicitly if you
+want the call activity element to appear in the result. Either way, what runs *inside* a called process instance is
+always part of the history (see the recursive call activity note above) and is reported through its own real type (e.g. a
+`USER_TASK` inside the called process instance still matches `TASK`/`ACTIVITY`/`USER_TASK`).
+
+### Sequence flows (`SEQUENCE`)
+
+`SEQUENCE_FLOW` is not part of the element instance history at all - Zeebe never returns it from the element
+instance search API (`GATEWAY`, `TASK`, etc. all come from there; sequence flows genuinely don't). Requesting
+`SEQUENCE` in `activityFilter` (or `ALL`, which includes it) makes `history` fetch taken sequence flows through
+Camunda's separate, dedicated API for this instead, and merge them into the result.
+
+That API is much thinner than element instances, though: a taken sequence flow only ever exposes its own element
+id, process instance/definition identifiers, tenant id - **no timestamp, no name, no state, no source/target**. To
+place a sequence flow in the startDate-ordered result at all, and to report `sourceRef`/`targetRef`, `history`
+parses the process definition's BPMN XML to resolve that flow's `sourceRef`/`targetRef`, then uses the target
+element's earliest start as an approximated `startDate`. Consequences:
+
+- A sequence flow entry only ever reports `elementId` (its own), `sourceRef`, `targetRef`, `processInstanceKey`,
+  `processDefinitionId`/`Name`/`Version`, `type` (always `SEQUENCE_FLOW`), `tenantId` and its approximated
+  `startDate` - every other topic (`elementName`, `elementInstanceKey`, `endDate`, `state`, `assignee`,
+  `hasIncident`, `incidentKey`) is omitted for it, per the contextual-omission rule above.
+- A sequence flow whose target hasn't started yet, or whose target/source can't be resolved from the BPMN XML, is
+  silently omitted - it cannot be honestly placed in a startDate-ordered list without a date.
+- **Ordering ties are broken by topology, not just by date.** Since a flow's approximated `startDate` is always
+  identical to its target's real `startDate` (and sometimes also to its source's, e.g. a chain of automatic
+  elements processed in the same instant), `history` resolves same-`startDate` ties so that a flow always sorts
+  **after its source activity and before its target activity** - e.g. if `needValidation` has outbound sequence
+  flow `Flow_0baismk`, the result orders them `needValidation`, `Flow_0baismk`, then whatever `Flow_0baismk` leads
+  to, even though all three may share the exact same `startDate`.
+
+Example: `history(resultType:JSON, topics:elementId|elementName|type|startDate|endDate|processInstanceKey|processDefinitionName|processDefinitionVersion|state, activityFilter:ACTIVITY|EVENT|SEQUENCE, size:500)` returns
+
+```json
+[
+  {
+    "elementId": "StartEvent_1",
+    "elementName": "StartEvent_1",
+    "type": "START_EVENT",
+    "startDate": "2026-08-10T19:08:27.224Z",
+    "endDate": "2026-08-10T19:08:27.224Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Activity_0kjf9pe",
+    "elementName": "needValidation",
+    "type": "SCRIPT_TASK",
+    "startDate": "2026-08-10T19:08:27.224Z",
+    "endDate": "2026-08-10T19:08:27.224Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Activity_1goiwt2",
+    "elementName": "getAmount",
+    "type": "SCRIPT_TASK",
+    "startDate": "2026-08-10T19:08:27.224Z",
+    "endDate": "2026-08-10T19:08:27.224Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Activity_0tm81e6",
+    "elementName": "getRiskLevel",
+    "type": "BUSINESS_RULE_TASK",
+    "startDate": "2026-08-10T19:08:27.224Z",
+    "endDate": "2026-08-10T19:08:27.224Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Activity_0j72crs",
+    "elementName": "validation",
+    "type": "SCRIPT_TASK",
+    "startDate": "2026-08-10T19:08:27.224Z",
+    "endDate": "2026-08-10T19:08:27.243Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "TERMINATED"
+  },
+  {
+    "elementId": "Event_1y6el57",
+    "elementName": "badAccount",
+    "type": "BOUNDARY_EVENT",
+    "startDate": "2026-08-10T19:08:27.243Z",
+    "endDate": "2026-08-10T19:08:27.243Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Activity_1i24ow1",
+    "elementName": "Light check",
+    "type": "USER_TASK",
+    "startDate": "2026-08-10T19:08:27.243Z",
+    "endDate": "2026-08-10T19:08:37.505Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "TERMINATED"
+  },
+  {
+    "elementId": "Event_SLA_LighCheck",
+    "elementName": "10s",
+    "type": "BOUNDARY_EVENT",
+    "startDate": "2026-08-10T19:08:37.505Z",
+    "endDate": "2026-08-10T19:08:37.505Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Event_0pw76i1",
+    "elementName": "Automatic acceptance",
+    "type": "INTERMEDIATE_THROW_EVENT",
+    "startDate": "2026-08-10T19:08:37.505Z",
+    "endDate": "2026-08-10T19:08:37.505Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "beginMarkBlue",
+    "elementName": "begin Blue",
+    "type": "INTERMEDIATE_THROW_EVENT",
+    "startDate": "2026-08-10T19:08:37.505Z",
+    "endDate": "2026-08-10T19:08:37.505Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Activity_1emt58t",
+    "elementName": "Calculate time to wait (5=>40s)",
+    "type": "SCRIPT_TASK",
+    "startDate": "2026-08-10T19:08:37.505Z",
+    "endDate": "2026-08-10T19:08:37.505Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Event_1mwrdvu",
+    "elementName": "Wait x seconds",
+    "type": "INTERMEDIATE_CATCH_EVENT",
+    "startDate": "2026-08-10T19:08:37.505Z",
+    "endDate": "2026-08-10T19:08:57.857Z",
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  },
+  {
+    "elementId": "Activity_getWeather",
+    "elementName": "getWeather",
+    "type": "SERVICE_TASK",
+    "startDate": "2026-08-10T19:08:57.857Z",
+    "endDate": null,
+    "processInstanceKey": 2251799814572129,
+    "processDefinitionName": "connector-KPI",
+    "processDefinitionVersion": 33,
+    "state": "COMPLETED"
+  }
+]
+```
+
+and `history(resultType:STRING, topics:elementId|elementName|startDate, activityFilter:TASK|EVENT)` returns the same activities as
+
+```
+elementId:StartEvent_1|elementName:Receive application|startDate:2026-08-10T17:21:08Z,elementId:GetScore|elementName:Get score|startDate:2026-08-10T17:22:03Z
+```
 
 ### threshold(variableName, operator, value)
 

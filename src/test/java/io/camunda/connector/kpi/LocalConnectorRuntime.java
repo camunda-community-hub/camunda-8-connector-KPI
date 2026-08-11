@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Random;
 
 @SpringBootApplication
-@Deployment(resources = {"classpath:connector-KPI.bpmn", "classpath:GetRiskLevel.dmn"})
+@Deployment(resources = {"classpath:log-metrics.bpmn","classpath:connector-KPI.bpmn", "classpath:GetRiskLevel.dmn"})
 
 public class LocalConnectorRuntime {
 
